@@ -22,4 +22,4 @@ async def timer(ctx, *args):
     await ctx.send(file=File('map.png'))
 
 
-bot.run('OTYwOTMyNTkzNzQwNjkzNTQ0.YkxoNw.vm2-78Tvy_1UGI-W17ZiGok2vs8')
+bot.run('OTYwOTMyNTkzNzQwNjkzNTQ0.YkxoNw.wwap-GRwgG2tvoHUuKy0KSOsgNA')
