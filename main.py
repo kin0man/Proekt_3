@@ -22,4 +22,4 @@ async def timer(ctx, *args):
     await ctx.send(file=File('map.png'))
 
 
-bot.run('OTYwOTMyNTkzNzQwNjkzNTQ0.YkxoNw.zcKbO6u3kbdyKRiJRvrgnr9_tos')
+bot.run('ЗДЕСЬ БУДЕТ ТОКЕН ИЗ ВК')
