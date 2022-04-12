@@ -21,6 +21,11 @@ def isfloat(str_):
     return h
 
 
+def write(request):
+    with open("search history.txt", mode="a") as file:
+        file.write(request + '\n')
+
+
 PREFIX = '-'
 bot = commands.Bot(command_prefix=PREFIX)
 bot.remove_command('help')
@@ -33,7 +38,7 @@ traffic_mode = ''
 @bot.event
 async def on_ready():
     print("Bot was connected to the server")
-    await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game('планете Земля'))
+    await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game('планета Земля'))
 
 
 @bot.command(name='place')
@@ -42,7 +47,7 @@ async def Place(ctx, *args):
     Isfloat = False
     Coords = False
     traffic_mode = ''
-    if len(args) > 1 and isfloat(args[0]) and isfloat(args[1]):
+    if len(args) == 2  and isfloat(args[0]) and isfloat(args[1]):
         Isfloat = True
         if -180 <= float(args[0]) <= 180 and -85 <= float(args[1]) <= 85:
             longitude = float(args[0])
@@ -55,6 +60,8 @@ async def Place(ctx, *args):
         await ctx.send('Вы здесь:')
         image_map()
         await ctx.send(file=File('map.png'))
+        if args:
+            write(f"-place {args[0]} {args[1]}")
     elif not Isfloat:
         await ctx.send('Введите долготу и широту')
     elif not Coords:
@@ -62,13 +69,16 @@ async def Place(ctx, *args):
 
 
 @bot.command(name='layer')
-async def Layer(ctx, change_layer=None):
+async def Layer(ctx, *change_layer):
     global layer
     list_layers = {'map': 'Схема', 'sat': 'Спутник', 'sat,skl': 'Гибрид'}
-    try:
-        await ctx.send(f'Слой был изменён с {list_layers[layer]} на {list_layers[change_layer]}')
-        layer = change_layer
-    except Exception:
+    if len(change_layer) == 1:
+        try:
+            await ctx.send(f'Слой был изменён с {list_layers[layer]} на {list_layers[change_layer[0]]}')
+            layer = change_layer
+        except Exception:
+            await ctx.send(f'Введите название слоя (map - схема; sat - спутник; sat,skl - гибрид)')
+    else:
         await ctx.send(f'Введите название слоя (map - схема; sat - спутник; sat,skl - гибрид)')
 
 
@@ -88,14 +98,15 @@ async def Traffic(ctx, *args):
 @bot.command(name='help')
 async def Help(ctx, *args):
     if not args:
-        embed = discord.Embed(title='Help menu', description="Here you can find the necessary command")
-        commands_list = ["help", 'clear', "place", "layer", "traffic"]
-        descriptions_for_commands = ["Список команд", 'Очистка сообщений (по умолчанию - 10)',
+        embed = discord.Embed(title='Команды', description="Здесь вы можете узнать команды и их описания")
+        commands_list = ["help", 'clear', "place", "layer", "traffic", "place_history"]
+        descriptions_for_commands = ["Список команд", 'Очистка последних сообщений (по умолчанию - 10)',
                                      "Ваше местоположение (по умолчанию - последнее)",
-                                     "Изменение слоя", "Пробки по последним координатам"]
+                                     "Изменение слоя (map - схема; sat - спутник; sat,skl - гибрид)",
+                                     "Пробки по последним координатам", "История введённых координат"]
         for command_name, description_command in zip(commands_list, descriptions_for_commands):
             embed.add_field(name=f'-{command_name}', value=description_command, inline=False)
-        await ctx.send(embed = embed)
+        await ctx.send(embed=embed)
     else:
         await ctx.send('Кроме команды ничего писать не нужно')
 
@@ -113,4 +124,35 @@ async def clear(ctx, *number):
         await ctx.send(f"Было удалено 10 сообщений")
 
 
-bot.run('ЗДЕСЬ БУДЕТ ТОКЕН ИЗ ВК')
+@bot.command(name="place_history")
+async def Place_history(ctx, *number):
+    if number:
+        if len(number) == 1 and number[0].isdigit():
+            with open("search history.txt", mode="r") as file:
+                open_file = file.readlines()
+                if len(open_file) > 0:
+                    if number[0] <= len(open_file):
+                        for i in range(int(number[0])):
+                            await ctx.send(f"{i + 1}. {open_file[i]}")
+                    else:
+                        for i in range(len(open_file)):
+                            await ctx.send(f"{i + 1}. {open_file[i]}")
+                else:
+                    await ctx.send('Ваша история пуста')
+        else:
+            await ctx.send('Введите одно число - количество последних запросов координат')
+    else:
+        with open("search history.txt", mode="r") as file:
+            open_file = file.readlines()
+            if len(open_file) > 0:
+                if number[0] <= len(open_file):
+                    for i in range(10):
+                        await ctx.send(f"{i + 1}. {open_file[i]}")
+                else:
+                    for i in range(len(open_file)):
+                        await ctx.send(f"{i + 1}. {open_file[i]}")
+            else:
+                await ctx.send('Ваша история пуста')
+
+
+bot.run('ТОКЕН')
