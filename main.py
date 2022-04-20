@@ -164,4 +164,4 @@ async def Game(ctx, *args):
         await ctx.send('Ваша история пуста')
 
 
-bot.run(TOKEN)
+bot.run('TOKEN')
