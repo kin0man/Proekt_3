@@ -36,7 +36,6 @@ traffic_mode = ''
 with open('token.txt', mode='r') as file:
     TOKEN = file.readlines()[0]
 
-
 @bot.event
 async def on_ready():
     print("Bot was connected to the server")
@@ -155,12 +154,12 @@ async def Game(ctx, *args):
         await ctx.send('Кроме команды ничего писать не нужно')
         return
     try:
-        await ctx.send(f"```Игра Страны```")
-        await ctx.send(f"Правила игры:\n")
-        await ctx.send(f"По изображению контура и флага страны вы должны угадать её"
-                       f"и написать название в чат (без префиксов)\n"
+        await ctx.send(f"```Игра «Страны»```")
+        await ctx.send(f"``Правила игры:``\n"
+                       f"По изображению контура и флага страны вы должны"
+                       f" угадать её и написать название в чат (без префиксов)\n"
                        f"*Вам даётся право на 3 ошибки*")
-        await ctx.send(f"**Начнём?**")
+        await ctx.send("**Начнём?**")
     except Exception:
         await ctx.send('Ваша история пуста')
 
