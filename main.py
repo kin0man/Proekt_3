@@ -22,7 +22,7 @@ def isfloat(str_):
 
 
 def write(request):
-    with open("search history.txt", mode="a") as file:
+    with open("search history.txt", mode="a", encoding='UTF-8') as file:
         file.write(request + '\n')
 
 
@@ -33,8 +33,16 @@ layer = 'map'
 longitude = 47.25
 lattitude = 56.1
 traffic_mode = ''
-with open('token.txt', mode='r') as file:
-    TOKEN = file.readlines()[0]
+with open("countries.txt", mode="r", encoding='UTF-8') as file:
+    open_file = file.readlines()
+    COUNTRIES = {open_file[0]: 'Аргентина', open_file[1]: 'Австралия', open_file[2]: 'Бельгия', open_file[3]: 'Канада',
+                open_file[4]: 'Китай', open_file[5]: 'Египет', open_file[6]: 'Великобритания', open_file[7]:
+                'Финляндия', open_file[8]: 'Франция', open_file[9]: 'Германия', open_file[10]: 'Греция',
+                open_file[11]: 'Индия', open_file[12]: 'Испания', open_file[13]: 'Италия', open_file[14]: 'Казахстан',
+                open_file[15]: 'Мексика', open_file[16]: 'Монголия', open_file[17]: 'Польша', open_file[18]:
+                'Португалия', open_file[19]: 'Россия', open_file[20]: 'Швеция', open_file[21]:
+                'Турция', open_file[22]: 'США'}
+
 
 @bot.event
 async def on_ready():
@@ -48,7 +56,7 @@ async def Place(ctx, *args):
     Isfloat = False
     Coords = False
     traffic_mode = ''
-    if len(args) == 2  and isfloat(args[0]) and isfloat(args[1]):
+    if len(args) == 2 and isfloat(args[0]) and isfloat(args[1]):
         Isfloat = True
         if -180 <= float(args[0]) <= 180 and -85 <= float(args[1]) <= 85:
             longitude = float(args[0])
@@ -62,11 +70,12 @@ async def Place(ctx, *args):
         image_map()
         await ctx.send(file=File('map.png'))
         if args:
-            write(f"-place {args[0]} {args[1]}")
+            write(f"Долгота {longitude}, широта {lattitude}")
     elif not Isfloat:
         await ctx.send('Введите долготу и широту')
     elif not Coords:
-        await ctx.send('Долгота должна быть в диапозоне от -180 до 180, а широта - от -85 до 85')
+        await ctx.send('Координаты должны быть рациональными числами. '
+                       'Долгота должна быть в диапозоне от -180 до 180, а широта - от -85 до 85')
 
 
 @bot.command(name='layer')
@@ -76,7 +85,7 @@ async def Layer(ctx, *change_layer):
     if len(change_layer) == 1:
         try:
             await ctx.send(f'Слой был изменён с {list_layers[layer]} на {list_layers[change_layer[0]]}')
-            layer = change_layer
+            layer = change_layer[0]
         except Exception:
             await ctx.send(f'Введите название слоя (map - схема; sat - спутник; sat,skl - гибрид)')
     else:
@@ -100,11 +109,12 @@ async def Traffic(ctx, *args):
 async def Help(ctx, *args):
     if not args:
         embed = discord.Embed(title='Команды', description="Здесь вы можете узнать команды и их описания")
-        commands_list = ["help", 'clear', "place", "layer", "traffic", "place_history"]
+        commands_list = ["help", 'clear', "place", "layer", "traffic", "place_history", "game"]
         descriptions_for_commands = ["Список команд", 'Очистка последних сообщений (по умолчанию - 10)',
                                      "Ваше местоположение (по умолчанию - последнее)",
                                      "Изменение слоя (map - схема; sat - спутник; sat,skl - гибрид)",
-                                     "Пробки по последним координатам", "История введённых координат"]
+                                     "Пробки по последним координатам", "История введённых координат",
+                                     "Географическая игра"]
         for command_name, description_command in zip(commands_list, descriptions_for_commands):
             embed.add_field(name=f'-{command_name}', value=description_command, inline=False)
         await ctx.send(embed=embed)
@@ -136,8 +146,9 @@ async def Place_history(ctx, *number):
     else:
         number = 10
     try:
-        with open("search history.txt", mode="r") as file:
+        with open("search history.txt", mode="r", encoding='UTF-8') as file:
             open_file = file.readlines()
+            await ctx.send('```Ваша история координат:```')
             if number <= len(open_file):
                 for i in range(number):
                     await ctx.send(f"{i + 1}. {open_file[i]}")
@@ -157,11 +168,40 @@ async def Game(ctx, *args):
         await ctx.send(f"```Игра «Страны»```")
         await ctx.send(f"``Правила игры:``\n"
                        f"По изображению контура и флага страны вы должны"
-                       f" угадать её и написать название в чат (без префиксов)\n"
+                       f"угадать её и написать название (естественно, с заглавной буквы) в чат (без префиксов)\n"
+                       f"Чтобы закночить игру напишите «Стоп»\n"
                        f"*Вам даётся право на 3 ошибки*")
         await ctx.send("**Начнём?**")
+        answer = await bot.wait_for("message")
+        answer = answer.content
+        if answer.lower() == 'да' or answer.lower() == 'конечно' or answer.lower() == 'погнали':
+            await ctx.send("Отлично!")
+            count = 23
+            mistake_count = 3
+            name_mistake_count = {1: 'а жизнь', 2: 'и жизни', 3: 'и жизни'}
+            while answer.lower() != 'стоп' and answer.lower() != 'хватит' and count > 0 and mistake_count > 0:
+                count -= 1
+                await ctx.send(list(COUNTRIES.keys())[count])
+                answer = await bot.wait_for("message")
+                answer = answer.content
+                if answer == COUNTRIES[list(COUNTRIES.keys())[count]]:
+                    await ctx.send("Правильно! Так держать!")
+                elif answer.lower() == 'стоп' or answer.lower() == 'хватит' or count == 0:
+                    break
+                else:
+                    mistake_count -= 1
+                    if mistake_count == 0:
+                        await ctx.send("Вы проиграли")
+                        break
+                    await ctx.send(f"К сожалению, это неправильно. У вас остал"
+                                   f"{name_mistake_count[mistake_count].split()[0]}сь {mistake_count}"
+                                   f" {name_mistake_count[mistake_count].split()[1]}")
+            await ctx.send("Спасибо за игру")
+        else:
+            await ctx.send("Жаль(")
     except Exception:
-        await ctx.send('Ваша история пуста')
+        print(Exception)
+
 
 
 bot.run('TOKEN')
