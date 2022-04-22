@@ -209,4 +209,4 @@ async def Game(ctx, *args):
         await ctx.send("Жаль(")
 
 
-bot.run('OTYwOTMyNTkzNzQwNjkzNTQ0.YkxoNw.hrIeOEmqIRhGkGWj7yIO5VawysU')
+bot.run('TOKEN')
