@@ -2,11 +2,13 @@ import discord
 from discord.ext import commands
 from discord import File
 import requests
+from random import randint, choice
 
 
 def image_map():
     global longitude, lattitude, layer
-    map_request = f"https://static-maps.yandex.ru/1.x/?ll={longitude},{lattitude}&size=650,450&z=11&l={layer + traffic_mode}"
+    map_request = f"https://static-maps.yandex.ru/1.x/?ll={longitude},{lattitude}&size=650,450&z=11&l=" \
+                  f"{layer + traffic_mode}"
     response = requests.get(map_request)
     map_file = "map.png"
     with open(map_file, "wb") as file:
@@ -42,6 +44,9 @@ with open("countries.txt", mode="r", encoding='UTF-8') as file:
                 open_file[15]: 'Мексика', open_file[16]: 'Монголия', open_file[17]: 'Польша', open_file[18]:
                 'Португалия', open_file[19]: 'Россия', open_file[20]: 'Швеция', open_file[21]:
                 'Турция', open_file[22]: 'США'}
+RIGHT_ANSWERS_WORDS = ['Правильно!', 'Так держать!', 'Молодец!', 'Отлично!', 'Всё верно!']
+WRONG_ANSWERS_WORDS = ['К сожаленью, это неправильно', 'Увы, это не так', 'Вы не правы!', 'Вы ошибаетесь',
+                       'Неверно!']
 
 
 @bot.event
@@ -127,12 +132,12 @@ async def clear(ctx, *number):
     if number:
         if len(number) == 1 and number[0].isdigit():
             await ctx.channel.purge(limit=int(number[0]))
-            await ctx.send(f"Было удалено {number[0]} сообщений")
+            await ctx.send(f"```Было удалено {number[0]} сообщений```")
         else:
             await ctx.send('Введите одно число - количество удаляемых сообщений')
     else:
         await ctx.channel.purge(limit=10)
-        await ctx.send(f"Было удалено 10 сообщений")
+        await ctx.send(f"```Было удалено 10 сообщений```")
 
 
 @bot.command(name="place_history")
@@ -150,10 +155,10 @@ async def Place_history(ctx, *number):
             open_file = file.readlines()
             await ctx.send('```Ваша история координат:```')
             if number <= len(open_file):
-                for i in range(number):
+                for i in range(len(open_file) - 1, len(open_file) - number - 1, -1):
                     await ctx.send(f"{i + 1}. {open_file[i]}")
             else:
-                for i in range(len(open_file)):
+                for i in range(len(open_file) - 1, 0, -1):
                     await ctx.send(f"{i + 1}. {open_file[i]}")
     except Exception:
         await ctx.send('Ваша история пуста')
@@ -161,47 +166,88 @@ async def Place_history(ctx, *number):
 
 @bot.command(name="game")
 async def Game(ctx, *args):
+    global right_answer, answer
     if args:
         await ctx.send('Кроме команды ничего писать не нужно')
         return
-    try:
-        await ctx.send(f"```Игра «Страны»```")
-        await ctx.send(f"``Правила игры:``\n"
-                       f"По изображению контура и флага страны вы должны"
-                       f"угадать её и написать название (естественно, с заглавной буквы) в чат (без префиксов)\n"
-                       f"Чтобы закночить игру напишите «Стоп»\n"
-                       f"*Вам даётся право на 3 ошибки*")
-        await ctx.send("**Начнём?**")
-        answer = await bot.wait_for("message")
-        answer = answer.content
-        if answer.lower() == 'да' or answer.lower() == 'конечно' or answer.lower() == 'погнали':
-            await ctx.send("Отлично!")
-            count = 23
-            mistake_count = 3
-            name_mistake_count = {1: 'а жизнь', 2: 'и жизни', 3: 'и жизни'}
-            while answer.lower() != 'стоп' and answer.lower() != 'хватит' and count > 0 and mistake_count > 0:
-                count -= 1
-                await ctx.send(list(COUNTRIES.keys())[count])
-                answer = await bot.wait_for("message")
-                answer = answer.content
-                if answer == COUNTRIES[list(COUNTRIES.keys())[count]]:
-                    await ctx.send("Правильно! Так держать!")
-                elif answer.lower() == 'стоп' or answer.lower() == 'хватит' or count == 0:
+    await ctx.send(f"```Игра «Страны»```")
+    await ctx.send(f"``Правила игры:``\n"
+                    f"По изображению контура и флага страны вы должны "
+                    f"угадать её и написать название (очевидно, с заглавной буквы) в чат (без префиксов)\n"
+                    f"Чтобы закночить игру напишите «Стоп»\n"
+                    f"*Вам даётся право на 3 ошибки*")
+    await ctx.send("**Начнём?**")
+    answer = await bot.wait_for("message")
+    answer = answer.content
+    number_countries = [i for i in range(23)]
+    if answer.lower() == 'да' or answer.lower() == 'конечно' or answer.lower() == 'погнали':
+        await ctx.send("Отлично!")
+        mistake_count = 3
+        name_mistake_count = {1: 'а жизнь', 2: 'и жизни', 3: 'и жизни'}
+        while answer.lower() != 'стоп' and answer.lower() != 'хватит' and len(number_countries) > 0 and mistake_count > 0:
+            choosing = number_countries.pop(randint(0, len(number_countries) - 1))
+            await ctx.send('Следующая страна:')
+            await ctx.send(list(COUNTRIES.keys())[choosing])
+            answer = await bot.wait_for("message")
+            answer = answer.content
+            right_answer = COUNTRIES[list(COUNTRIES.keys())[choosing]]
+            if answer == right_answer:
+                await ctx.send(choice(RIGHT_ANSWERS_WORDS))
+            elif answer.lower() == 'стоп' or answer.lower() == 'хватит' or len(number_countries) == 0:
+                break
+            else:
+                mistake_count -= 1
+                if mistake_count == 0:
                     break
-                else:
-                    mistake_count -= 1
-                    if mistake_count == 0:
-                        await ctx.send("Вы проиграли")
-                        break
-                    await ctx.send(f"К сожалению, это неправильно. У вас остал"
-                                   f"{name_mistake_count[mistake_count].split()[0]}сь {mistake_count}"
-                                   f" {name_mistake_count[mistake_count].split()[1]}")
-            await ctx.send("Спасибо за игру")
-        else:
-            await ctx.send("Жаль(")
-    except Exception:
-        print(Exception)
+                await ctx.send(f"{choice(WRONG_ANSWERS_WORDS)}.\nУ вас остал"
+                                f"{name_mistake_count[mistake_count].split()[0]}сь {mistake_count}"
+                                f" {name_mistake_count[mistake_count].split()[1]}")
+                await ctx.send(f'Правильный ответ - {right_answer}')
+                await ctx.send('Следующая страна:')
+        if mistake_count == 3:
+            await ctx.send('Наше почтение, вы не совершили ни одной ошибки!')
+            await ctx.send('https://i.ytimg.com/vi/WseshSyT4p8/maxresdefault.jpg')
+        elif mistake_count == 0:
+            await ctx.send(f"Вы проиграли и набрали баллов - {23 - len(number_countries) - (3 - mistake_count)}")
+        await ctx.send("Спасибо за игру")
+    else:
+        await ctx.send("Жаль(")
 
+
+@bot.command(name='find')
+async def Find(ctx, *args):
+    global longitude, lattitude, layer, traffic_mode
+    traffic_mode = ''
+    find_place = ' '.join(list(args))
+    try:
+        find_request = f"https://geocode-maps.yandex.ru/1.x/?apikey=40d1649f-0493-4b70-98ba-98533de7710b&format=" \
+                       f"json&geocode={find_place}&results=1"
+        coords = requests.get(find_request).json()["response"]["GeoObjectCollection"]["featureMember"] \
+            [0]["GeoObject"]["Point"]['pos'].split()
+        longitude = coords[0]
+        lattitude = coords[1]
+        kind = requests.get(find_request).json()["response"]["GeoObjectCollection"]["featureMember"][0] \
+                  ["GeoObject"]['metaDataProperty']['GeocoderMetaData']['kind']
+        print(kind)
+        if kind == 'house':
+            find_zoom = 18
+        elif kind == 'street':
+            find_zoom = 16
+        elif kind == 'hydro':
+            find_zoom = 6
+        else:
+            find_zoom = 11
+        map_request = f"https://static-maps.yandex.ru/1.x/?ll={longitude},{lattitude}&size=650,450&z={find_zoom}&l=" \
+                      f"{layer + traffic_mode}&pt={longitude},{lattitude},ya_ru"
+        response = requests.get(map_request)
+        map_file = "map.png"
+        with open(map_file, "wb") as file:
+            file.write(response.content)
+        await ctx.send(f'{find_place} здесь:')
+        await ctx.send(file=File('map.png'))
+        write(f"Долгота и широта [{find_place}]: {longitude}, {lattitude}")
+    except Exception:
+        await ctx.send('Увы, по вашему запросу ничего не было найдено')
 
 
 bot.run('TOKEN')
