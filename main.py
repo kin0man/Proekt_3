@@ -5,9 +5,10 @@ import requests
 from random import randint, choice
 
 
+# создание файла с картинкой
 def image_map():
-    global longitude, lattitude, layer
-    map_request = f"https://static-maps.yandex.ru/1.x/?ll={longitude},{lattitude}&size=650,450&z=11&l=" \
+    global longitude, lattitude, layer, zoom
+    map_request = f"https://static-maps.yandex.ru/1.x/?ll={longitude},{lattitude}&size=650,450&z={zoom}&l=" \
                   f"{layer + traffic_mode}"
     response = requests.get(map_request)
     map_file = "map.png"
@@ -15,6 +16,7 @@ def image_map():
         file.write(response.content)
 
 
+# проверка того, что строка является числом
 def isfloat(str_):
     h = True
     for i in str_:
@@ -23,7 +25,8 @@ def isfloat(str_):
     return h
 
 
-def write(request):
+# добавление координат в текстовый файл
+def write(request):  #
     with open("search history.txt", mode="a", encoding='UTF-8') as file:
         file.write(request + '\n')
 
@@ -34,7 +37,9 @@ bot.remove_command('help')
 layer = 'map'
 longitude = 47.25
 lattitude = 56.1
+zoom = 11
 traffic_mode = ''
+# считывание информации с текстового файла и добавление её в словарь со странами
 with open("countries.txt", mode="r", encoding='UTF-8') as file:
     open_file = file.readlines()
     COUNTRIES = {open_file[0]: 'Аргентина', open_file[1]: 'Австралия', open_file[2]: 'Бельгия', open_file[3]: 'Канада',
@@ -49,15 +54,17 @@ WRONG_ANSWERS_WORDS = ['К сожаленью, это неправильно', '
                        'Неверно!']
 
 
+# изменение статуса бота, когда он появляется в сети
 @bot.event
 async def on_ready():
     print("Bot was connected to the server")
     await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game('планета Земля'))
 
 
+# отправка картинки местоположения
 @bot.command(name='place')
 async def Place(ctx, *args):
-    global longitude, lattitude, layer, traffic_mode
+    global longitude, lattitude, traffic_mode
     Isfloat = False
     Coords = False
     traffic_mode = ''
@@ -77,12 +84,13 @@ async def Place(ctx, *args):
         if args:
             write(f"Долгота {longitude}, широта {lattitude}")
     elif not Isfloat:
-        await ctx.send('Введите долготу и широту')
+        await ctx.send('Через пробел введите долготу и широту')
     elif not Coords:
         await ctx.send('Координаты должны быть рациональными числами. '
                        'Долгота должна быть в диапозоне от -180 до 180, а широта - от -85 до 85')
 
 
+# изменение слоя
 @bot.command(name='layer')
 async def Layer(ctx, *change_layer):
     global layer
@@ -97,9 +105,10 @@ async def Layer(ctx, *change_layer):
         await ctx.send(f'Введите название слоя (map - схема; sat - спутник; sat,skl - гибрид)')
 
 
+# отображение пробок
 @bot.command(name='traffic')
 async def Traffic(ctx, *args):
-    global longitude, lattitude, layer, traffic_mode
+    global layer, traffic_mode
     if layer == 'sat,skl':
         layer = 'sat'
     traffic_mode = ',trf,skl'
@@ -110,16 +119,18 @@ async def Traffic(ctx, *args):
         await ctx.send('Кроме команды ничего писать не нужно')
 
 
+# демонстрация всех функций бота
 @bot.command(name='help')
 async def Help(ctx, *args):
     if not args:
         embed = discord.Embed(title='Команды', description="Здесь вы можете узнать команды и их описания")
-        commands_list = ["help", 'clear', "place", "layer", "traffic", "place_history", "game"]
+        commands_list = ["help", 'clear', "place", "layer", "traffic", "place_history", "game", "find", "zoom"]
         descriptions_for_commands = ["Список команд", 'Очистка последних сообщений (по умолчанию - 10)',
                                      "Ваше местоположение (по умолчанию - последнее)",
                                      "Изменение слоя (map - схема; sat - спутник; sat,skl - гибрид)",
                                      "Пробки по последним координатам", "История введённых координат",
-                                     "Географическая игра"]
+                                     "Географическая игра", "Поиск мест", "Изменение масштаба "
+                                                                          "(натуральное число до 23)"]
         for command_name, description_command in zip(commands_list, descriptions_for_commands):
             embed.add_field(name=f'-{command_name}', value=description_command, inline=False)
         await ctx.send(embed=embed)
@@ -127,6 +138,7 @@ async def Help(ctx, *args):
         await ctx.send('Кроме команды ничего писать не нужно')
 
 
+# чистка сообщений
 @bot.command(name="clear")
 async def clear(ctx, *number):
     if number:
@@ -140,6 +152,7 @@ async def clear(ctx, *number):
         await ctx.send(f"```Было удалено 10 сообщений```")
 
 
+# история запросов place
 @bot.command(name="place_history")
 async def Place_history(ctx, *number):
     if number:
@@ -164,6 +177,7 @@ async def Place_history(ctx, *number):
         await ctx.send('Ваша история пуста')
 
 
+# игра Страны
 @bot.command(name="game")
 async def Game(ctx, *args):
     global right_answer, answer
@@ -184,9 +198,11 @@ async def Game(ctx, *args):
         await ctx.send("Отлично!")
         mistake_count = 3
         name_mistake_count = {1: 'а жизнь', 2: 'и жизни', 3: 'и жизни'}
-        while answer.lower() != 'стоп' and answer.lower() != 'хватит' and len(number_countries) > 0 and mistake_count > 0:
+        while answer.lower() != 'стоп' and answer.lower() != 'хватит' and len(number_countries) > 0 and \
+                mistake_count > 0:
+            if len(number_countries) != 23:
+                await ctx.send('Следующая страна:')
             choosing = number_countries.pop(randint(0, len(number_countries) - 1))
-            await ctx.send('Следующая страна:')
             await ctx.send(list(COUNTRIES.keys())[choosing])
             answer = await bot.wait_for("message")
             answer = answer.content
@@ -203,7 +219,6 @@ async def Game(ctx, *args):
                                 f"{name_mistake_count[mistake_count].split()[0]}сь {mistake_count}"
                                 f" {name_mistake_count[mistake_count].split()[1]}")
                 await ctx.send(f'Правильный ответ - {right_answer}')
-                await ctx.send('Следующая страна:')
         if mistake_count == 3:
             await ctx.send('Наше почтение, вы не совершили ни одной ошибки!')
             await ctx.send('https://i.ytimg.com/vi/WseshSyT4p8/maxresdefault.jpg')
@@ -214,9 +229,10 @@ async def Game(ctx, *args):
         await ctx.send("Жаль(")
 
 
+# поиск адреса и его отображение
 @bot.command(name='find')
 async def Find(ctx, *args):
-    global longitude, lattitude, layer, traffic_mode
+    global longitude, lattitude, layer, traffic_mode, zoom
     traffic_mode = ''
     find_place = ' '.join(list(args))
     try:
@@ -228,16 +244,15 @@ async def Find(ctx, *args):
         lattitude = coords[1]
         kind = requests.get(find_request).json()["response"]["GeoObjectCollection"]["featureMember"][0] \
                   ["GeoObject"]['metaDataProperty']['GeocoderMetaData']['kind']
-        print(kind)
         if kind == 'house':
-            find_zoom = 18
+            zoom = 18
         elif kind == 'street':
-            find_zoom = 16
+            zoom = 16
         elif kind == 'hydro':
-            find_zoom = 6
+            zoom = 6
         else:
-            find_zoom = 11
-        map_request = f"https://static-maps.yandex.ru/1.x/?ll={longitude},{lattitude}&size=650,450&z={find_zoom}&l=" \
+            zoom = 11
+        map_request = f"https://static-maps.yandex.ru/1.x/?ll={longitude},{lattitude}&size=650,450&z={zoom}&l=" \
                       f"{layer + traffic_mode}&pt={longitude},{lattitude},ya_ru"
         response = requests.get(map_request)
         map_file = "map.png"
@@ -248,6 +263,20 @@ async def Find(ctx, *args):
         write(f"Долгота и широта [{find_place}]: {longitude}, {lattitude}")
     except Exception:
         await ctx.send('Увы, по вашему запросу ничего не было найдено')
+
+
+# изменение масштаба
+@bot.command(name='zoom')
+async def Zoom(ctx, *change_zoom):
+    global zoom
+    if len(change_zoom) == 1:
+        try:
+            await ctx.send(f'Масштаб был изменён с {zoom} на {int(change_zoom[0])}')
+            zoom = int(change_zoom[0])
+        except Exception:
+            await ctx.send(f'Введите натуральное число до 23 - новый масштаб ')
+    else:
+        await ctx.send(f'Введите натуральное число до 23 - новый масштаб ')
 
 
 bot.run('TOKEN')
