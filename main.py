@@ -210,6 +210,7 @@ async def Game(ctx, *args):
             if answer == right_answer:
                 await ctx.send(choice(RIGHT_ANSWERS_WORDS))
             elif answer.lower() == 'стоп' or answer.lower() == 'хватит' or len(number_countries) == 0:
+                mistake_count = 0
                 break
             else:
                 mistake_count -= 1
@@ -279,4 +280,4 @@ async def Zoom(ctx, *change_zoom):
         await ctx.send(f'Введите натуральное число до 23 - новый масштаб ')
 
 
-bot.run('TOKEN')
+bot.run('OTYwOTMyNTkzNzQwNjkzNTQ0.YkxoNw.g0NMf3te7sGfPyUHgsvefcrYvMQ')
